@@ -95,7 +95,7 @@ async def summarize_responses(
 
     Returns dict with 'themes' list and 'model_used', or None if all models fail.
     """
-    api_key = api_key or os.environ.get("OPENROUTER_API_KEY", "")
+    api_key = (api_key or os.environ.get("OPENROUTER_API_KEY", "")).strip()
     if not api_key:
         logger.error("OPENROUTER_API_KEY not set")
         return None

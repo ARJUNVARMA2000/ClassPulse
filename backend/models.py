@@ -1,4 +1,4 @@
-"""Pydantic models for ThemePulse API."""
+"""Pydantic models for ClassPulse API."""
 
 from pydantic import BaseModel, Field
 from typing import Optional

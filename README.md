@@ -1,4 +1,4 @@
-# ThemePulse
+# ClassPulse
 
 Live classroom theme extraction tool. A professor posts a question, students submit answers via a QR code link, and an LLM (via OpenRouter) auto-summarizes responses into themed cards with student attribution.
 
@@ -50,6 +50,25 @@ npm run dev
 
 The Vite dev server starts at `http://localhost:5173` and proxies `/api` requests to the backend at `http://localhost:8000`.
 
+### Testing with Fake Student Responses
+
+Use the seed script to auto-generate student responses without manual input:
+
+```bash
+# From project root, with backend venv activated (or pip install httpx):
+cd backend && venv\Scripts\activate
+python ../scripts/seed_student_responses.py --count 10 --frontend-url http://localhost:5173
+```
+
+This creates a new session, submits 10 fake responses, and prints the admin dashboard URL. The AI will summarize responses into themes every 10 seconds (requires 3+ responses).
+
+**Options:**
+- `--session-id <id>` — Use an existing session instead of creating one
+- `--question "Your question"` — Custom question for new sessions
+- `--count N` — Number of responses (default: 10)
+- `--delay N` — Seconds between submissions (default: 0.5)
+- `--frontend-url http://localhost:5173` — For local dev when frontend runs on Vite
+
 ## Environment Variables
 
 | Variable | Required | Where | Description |
@@ -64,7 +83,7 @@ The app deploys as a **single service**: the Dockerfile builds the React fronten
 
 ```bash
 railway login
-railway init -n ThemePulse
+railway init -n ClassPulse
 railway up
 railway domain          # generate a public URL
 ```

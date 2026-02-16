@@ -45,7 +45,7 @@ export default function Student() {
     return (
       <div className="page">
         <div className="container">
-          <div className="loading">Loading session...</div>
+          <div className="loading">Establishing uplink...</div>
         </div>
       </div>
     );
@@ -57,8 +57,9 @@ export default function Student() {
         <div className="container">
           <div className="success-card">
             <div className="success-icon">&#10003;</div>
-            <h2>Response Submitted!</h2>
-            <p>Thank you, <strong>{studentName}</strong>. Your response has been recorded.</p>
+            <h2>Transmission Received</h2>
+            <p>Signal confirmed from <strong>{studentName}</strong>.</p>
+            <p>Your response is being processed.</p>
           </div>
         </div>
       </div>
@@ -68,7 +69,10 @@ export default function Student() {
   return (
     <div className="page">
       <div className="container">
-        <h1 className="logo logo-small">ThemePulse</h1>
+        <div className="student-header">
+          <h1 className="logo logo-small">CLASSPULSE</h1>
+          <div className="hero-badge">// uplink terminal</div>
+        </div>
 
         {error ? (
           <div className="error-card">
@@ -77,12 +81,13 @@ export default function Student() {
         ) : (
           <>
             <div className="question-display">
-              <span className="question-label">Question</span>
+              <span className="question-label">// mission briefing</span>
               <h2 className="question-text">{question}</h2>
             </div>
 
             <form onSubmit={handleSubmit} className="response-form">
-              <label htmlFor="name" className="form-label">Your name</label>
+              <span className="panel-label">// your transmission</span>
+              <label htmlFor="name" className="form-label">Callsign</label>
               <input
                 id="name"
                 type="text"
@@ -94,7 +99,7 @@ export default function Student() {
                 required
               />
 
-              <label htmlFor="answer" className="form-label">Your answer</label>
+              <label htmlFor="answer" className="form-label">Response</label>
               <textarea
                 id="answer"
                 className="form-textarea"
@@ -111,7 +116,7 @@ export default function Student() {
                 className="btn btn-primary"
                 disabled={submitting || !studentName.trim() || !answer.trim()}
               >
-                {submitting ? 'Submitting...' : 'Submit Response'}
+                {submitting ? 'Transmitting...' : 'Transmit'}
               </button>
             </form>
           </>

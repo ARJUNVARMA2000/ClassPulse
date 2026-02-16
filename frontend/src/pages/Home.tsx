@@ -28,16 +28,21 @@ export default function Home() {
     <div className="page">
       <div className="container">
         <div className="hero">
-          <h1 className="logo">ThemePulse</h1>
+          <div className="hero-badge">// mission control</div>
+          <h1 className="logo">CLASSPULSE</h1>
           <p className="tagline">
-            Live classroom theme extraction. Ask a question, let students respond,
-            and watch AI surface the key themes in real time.
+            Deploy a question to your class. Gather live responses.
+            Watch AI decode the key themes in real time.
           </p>
+          <div className="hero-divider">
+            <span>SYS.ONLINE</span>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="create-form">
+          <span className="panel-label">// new mission</span>
           <label htmlFor="question" className="form-label">
-            Your question for the class
+            Briefing Question
           </label>
           <textarea
             id="question"
@@ -54,10 +59,12 @@ export default function Home() {
             className="btn btn-primary"
             disabled={loading || !question.trim()}
           >
-            {loading ? 'Creating...' : 'Create Session'}
+            {loading ? 'Initializing...' : 'Launch Session'}
           </button>
           {error && <p className="error-text">{error}</p>}
         </form>
+
+        <div className="footer-badge">classpulse v1.0 // classroom intelligence</div>
       </div>
     </div>
   );

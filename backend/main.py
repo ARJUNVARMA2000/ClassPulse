@@ -1,4 +1,4 @@
-"""ThemePulse - FastAPI backend for live classroom theme extraction."""
+"""ClassPulse - FastAPI backend for live classroom theme extraction."""
 
 import asyncio
 import io
@@ -169,7 +169,7 @@ async def lifespan(app: FastAPI):
             task.cancel()
 
 
-app = FastAPI(title="ThemePulse API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="ClassPulse API", version="1.0.0", lifespan=lifespan)
 
 # CORS - allow frontend
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")

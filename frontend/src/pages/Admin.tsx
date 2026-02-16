@@ -106,7 +106,7 @@ export default function Admin() {
     return (
       <div className="page">
         <div className="container">
-          <div className="loading">Loading dashboard...</div>
+          <div className="loading">Initializing command center...</div>
         </div>
       </div>
     );
@@ -126,9 +126,10 @@ export default function Admin() {
     <div className="page admin-page">
       <div className="container admin-container">
         <header className="admin-header">
-          <h1 className="logo logo-small">ThemePulse</h1>
+          <h1 className="logo logo-small">CLASSPULSE</h1>
           <div className="connection-badge" data-connected={connected}>
-            {connected ? 'Live' : 'Reconnecting...'}
+            <span className="connection-dot" />
+            {connected ? 'Live Telemetry' : 'Signal Lost'}
           </div>
         </header>
 
@@ -136,14 +137,14 @@ export default function Admin() {
           {/* Sidebar with QR + info */}
           <aside className="admin-sidebar">
             <div className="question-display">
-              <span className="question-label">Question</span>
+              <span className="question-label">// mission briefing</span>
               <h2 className="question-text">{question}</h2>
             </div>
 
             <div className="qr-section">
-              <p className="qr-label">Students scan to join:</p>
+              <p className="qr-label">// uplink coordinates</p>
               <div className="qr-wrapper">
-                <QRCodeSVG value={studentUrl} size={200} level="M" />
+                <QRCodeSVG value={studentUrl} size={180} level="M" />
               </div>
               <div className="link-row">
                 <input
@@ -159,6 +160,7 @@ export default function Admin() {
             </div>
 
             <div className="response-counter">
+              <span className="counter-label-top">// incoming signals</span>
               <span className="counter-number">{responseCount}</span>
               <span className="counter-label">
                 {responseCount === 1 ? 'response' : 'responses'}
@@ -167,7 +169,7 @@ export default function Admin() {
 
             {responseCount < minRequired && (
               <p className="waiting-text">
-                Waiting for at least {minRequired} responses to start summarizing...
+                Awaiting {minRequired - responseCount} more signal{minRequired - responseCount !== 1 ? 's' : ''} to begin decode...
               </p>
             )}
           </aside>
@@ -180,24 +182,27 @@ export default function Admin() {
 
             {summary && summary.themes.length > 0 ? (
               <>
-                <h2 className="themes-heading">Key Themes</h2>
+                <h2 className="themes-heading">// decoded signals</h2>
                 <div className="themes-grid">
                   {summary.themes.map((theme, i) => (
                     <ThemeCard key={i} theme={theme} index={i} />
                   ))}
                 </div>
                 <p className="summary-meta">
-                  Based on {summary.response_count} responses
-                  {summary.model_used && <> &middot; Model: {summary.model_used}</>}
+                  Decoded from {summary.response_count} transmissions
+                  {summary.model_used && <> &middot; {summary.model_used}</>}
                 </p>
               </>
             ) : (
               <div className="empty-state">
-                <div className="empty-icon">&#x1F4CA;</div>
-                <h2>Themes will appear here</h2>
+                <div className="radar-sweep">
+                  <div className="cross-h" />
+                  <div className="cross-v" />
+                </div>
+                <h2>Scanning for signals</h2>
                 <p>
-                  As students submit responses, AI will automatically extract
-                  and display the key themes from their answers.
+                  As students transmit responses, AI will automatically
+                  decode and surface the key themes from their answers.
                 </p>
               </div>
             )}

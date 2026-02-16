@@ -105,8 +105,8 @@ async def summarize_responses(
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://themepulse.app",
-        "X-Title": "ThemePulse",
+        "HTTP-Referer": "https://classpulse.app",
+        "X-Title": "ClassPulse",
     }
 
     for model_id in FALLBACK_MODELS:

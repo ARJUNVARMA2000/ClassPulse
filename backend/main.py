@@ -95,17 +95,20 @@ async def _summarizer_loop(session_id: str):
         )
 
         if result is None:
-            logger.warning("Summarization failed for session %s", session_id)
-            # Push an error event so the frontend knows
-            error_payload = {
-                "error": True,
-                "message": "Summarization temporarily unavailable. Retrying...",
-                "response_count": count,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+            logger.warning("Summarization failed for session %s, using raw response fallback", session_id)
+            # Fallback: show each response as its own theme card
+            fallback_themes = [
+                {
+                    "title": f"Response from {r['student_name']}",
+                    "description": r["answer"],
+                    "student_names": [r["student_name"]],
+                }
+                for r in responses
+            ]
+            result = {
+                "themes": fallback_themes,
+                "model_used": "Raw responses (AI unavailable)",
             }
-            for q in session["sse_queues"]:
-                await q.put(error_payload)
-            continue
 
         summary = SummaryPayload(
             themes=[Theme(**t) for t in result["themes"]],

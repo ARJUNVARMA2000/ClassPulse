@@ -1,117 +1,88 @@
 # ClassPulse
 
-[![CI](https://github.com/ARJUNVARMA2000/ClassPulse/actions/workflows/ci.yml/badge.svg)](https://github.com/ARJUNVARMA2000/ClassPulse/actions/workflows/ci.yml)
+Live classroom theme extraction. Professors post a question, students answer via QR code, an LLM summarizes the responses into 4–6 themed cards in real time. FastAPI + SSE, 5-model OpenRouter fallback chain, single Railway service.
 
-Live classroom theme extraction tool. A professor posts a question, students submit answers via a QR code link, and an LLM (via OpenRouter) auto-summarizes responses into themed cards with student attribution.
+- **Live demo:** https://themepulse-production.up.railway.app/
+- **Portfolio:** https://arjun-varma.com/
+- **Built at:** Personal project · 2026
 
-## Live Demo
+## Problem
 
-**[https://themepulse-production.up.railway.app/](https://themepulse-production.up.railway.app/)** — Try it live (deployed on Railway).
+In live classrooms, professors ask open-ended questions to gauge student understanding. Collecting and synthesizing dozens of responses in real time is impractical. Students hesitate to speak up; manual aggregation of written responses misses emerging themes.
 
-## How It Works
+Goal: professor poses a question, students submit instantly via QR or link, system summarizes responses into key themes with attribution — turning messy classroom input into actionable insights during the session.
 
-1. **Professor** creates a session with a question
-2. **Students** scan the QR code or open the link to submit their answers
-3. **AI** automatically summarizes responses into 4-6 key themes every 10 seconds
-4. **Dashboard** displays theme cards with titles, descriptions, and student names
+## Challenge
+
+- Aggregate and process submissions as they arrive without blocking the UI
+- LLM summarization must run periodically (e.g. every 10 seconds) while new responses stream in
+- 5-model fallback chain required to handle API rate limits and availability
+- Single deployment (FastAPI + static React) to simplify Railway hosting
+- QR code and shareable link flow must be frictionless for students on any device
+
+## Approach
+
+1. **Session creation** — professor creates a session with a question; system generates a unique QR code and shareable link
+2. **Student submission** — students open the link (no signup), type their answer, submit
+3. **Periodic summarization** — backend runs summarization every 10 seconds when ≥3 responses exist, using OpenRouter with a 5-model fallback chain
+4. **Real-time updates** — FastAPI serves Server-Sent Events so the professor's dashboard updates automatically as new themes are generated
+
+## Solution / Architecture
+
+```mermaid
+flowchart LR
+    P[Professor] -->|creates session| API[FastAPI]
+    API --> QR[QR code + link]
+    QR --> S1[Student 1]
+    QR --> S2[Student 2]
+    QR --> S3[Student N]
+    S1 --> API
+    S2 --> API
+    S3 --> API
+    API --> T[Theme job<br/>every 10s, ≥3 responses]
+    T --> OR[OpenRouter fallback chain]
+    OR --> G[Gemini 2.0 Flash]
+    OR --> L[Llama 3.1]
+    OR --> M[Mistral 7B]
+    OR --> GM[Gemma 2]
+    OR --> Q[Qwen 2.5]
+    OR --> TH[4-6 themes + attribution]
+    TH --> SSE[SSE stream]
+    SSE --> P
+```
+
+**Components:**
+
+- **FastAPI backend** — REST API for sessions, responses, theme summaries; SSE endpoint for real-time dashboard
+- **React / Vite frontend** — professor dashboard with theme cards + student attribution; student submission form with QR display
+- **OpenRouter integration** — 5-model fallback chain (Gemini 2.0 Flash → Llama 3.1 → Mistral 7B → Gemma 2 → Qwen 2.5)
+- **Single Dockerfile** — builds React static assets, runs FastAPI serving both API and static files
+- **Railway deployment** — one service, auto-deploy on push, OpenRouter API key as Railway variable
+
+## Impact / Results
+
+- Live theme extraction from student responses in real time during class
+- Reduces manual aggregation from minutes to seconds
+- 5-model fallback ensures summarization works even when primary models are rate-limited
+- Frictionless student flow — no signup, just scan and submit
+- Deployed on Railway with CI/CD from GitHub pushes
 
 ## Tech Stack
 
-- **Backend**: Python / FastAPI with SSE for real-time updates
-- **Frontend**: React / Vite / TypeScript
-- **AI**: OpenRouter API with 5-model fallback chain
-- **Deployment**: Railway (single service, auto-deploy on push via GitHub)
+Python · FastAPI · Server-Sent Events · React · TypeScript · Vite · OpenRouter API · Railway · Docker
 
-## Local Development
-
-### Prerequisites
-
-- Python 3.11+
-- Node.js 20+
-- An [OpenRouter](https://openrouter.ai/) API key
-
-### Backend
+## Run Locally
 
 ```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
+git clone https://github.com/ARJUNVARMA2000/ClassPulse.git
+cd ClassPulse
+cp .env.example .env   # add OPENROUTER_API_KEY
+# backend
 pip install -r requirements.txt
-
-# Create .env file
-cp .env.example .env
-# Edit .env and add your OPENROUTER_API_KEY
-
-uvicorn main:app --reload --port 8000
+uvicorn api.main:app --reload
+# frontend (separate terminal)
+cd frontend && npm install && npm run dev
 ```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The Vite dev server starts at `http://localhost:5173` and proxies `/api` requests to the backend at `http://localhost:8000`.
-
-### Testing with Fake Student Responses
-
-Use the seed script to auto-generate student responses without manual input:
-
-```bash
-# From project root, with backend venv activated (or pip install httpx):
-cd backend && venv\Scripts\activate
-python ../scripts/seed_student_responses.py --count 10 --frontend-url http://localhost:5173
-```
-
-This creates a new session, submits 10 fake responses, and prints the admin dashboard URL. The AI will summarize responses into themes every 10 seconds (requires 3+ responses).
-
-**Options:**
-- `--session-id <id>` — Use an existing session instead of creating one
-- `--question "Your question"` — Custom question for new sessions
-- `--count N` — Number of responses (default: 10)
-- `--delay N` — Seconds between submissions (default: 0.5)
-- `--frontend-url http://localhost:5173` — For local dev when frontend runs on Vite
-
-## Environment Variables
-
-| Variable | Required | Where | Description |
-|---|---|---|---|
-| `OPENROUTER_API_KEY` | Yes | Backend / Railway | Your OpenRouter API key |
-
-## Deployment (Railway)
-
-The app deploys as a **single service**: the Dockerfile builds the React frontend, then runs FastAPI which serves both the API and the static files.
-
-### Using Railway CLI
-
-```bash
-railway login
-railway init -n ClassPulse
-railway up
-railway domain          # generate a public URL
-```
-
-Set your OpenRouter API key:
-```bash
-railway variables --set "OPENROUTER_API_KEY=sk-or-v1-your-key"
-```
-
-### Auto-Deploy on Push
-
-Connect your GitHub repo in the Railway dashboard. Every push to `main` or merged PR triggers an automatic redeploy.
-
-## OpenRouter Models (Fallback Chain)
-
-The app tries these models in order. If one fails, it automatically falls back to the next:
-
-1. `google/gemini-2.0-flash-001`
-2. `meta-llama/llama-3.1-8b-instruct`
-3. `mistralai/mistral-7b-instruct`
-4. `google/gemma-2-9b-it`
-5. `qwen/qwen-2.5-7b-instruct`
 
 ## License
 

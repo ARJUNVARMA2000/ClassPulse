@@ -18,11 +18,11 @@ export default function Admin() {
   const [summary, setSummary] = useState<SummaryPayload | null>(null);
   const [sseError, setSseError] = useState('');
   const [connected, setConnected] = useState(false);
+  const [copied, setCopied] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
   const responseCountRef = useRef(responseCount);
   useEffect(() => { responseCountRef.current = responseCount; }, [responseCount]);
 
-  // Load session info
   useEffect(() => {
     if (!sessionId) return;
     getSession(sessionId)
@@ -37,7 +37,6 @@ export default function Admin() {
       });
   }, [sessionId]);
 
-  // SSE connection
   const connectSSE = useCallback(() => {
     if (!sessionId || !adminToken) return;
 
@@ -77,15 +76,13 @@ export default function Admin() {
         setSseError(data.message || 'Summarization error');
         setResponseCount(data.response_count || responseCountRef.current);
       } catch {
-        // Connection error, will auto-reconnect
+        // Connection errors are handled by EventSource's automatic retry below.
       }
     });
 
     es.onerror = () => {
       setConnected(false);
-      es.close();
-      // Auto-reconnect after 3 seconds
-      setTimeout(connectSSE, 3000);
+      // Keep the stream open so EventSource can use its built-in retry behavior.
     };
   }, [sessionId, adminToken]);
 
@@ -100,15 +97,22 @@ export default function Admin() {
     ? `${window.location.origin}/session/${sessionId}`
     : '';
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(studentUrl).catch(() => {});
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(studentUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
   };
 
   if (loading) {
     return (
-      <div className="page">
-        <div className="container">
-          <div className="loading">Initializing command center...</div>
+      <div className="state-page">
+        <div className="loading-state" role="status">
+          <span className="pixel-loader" aria-hidden="true" />
+          <span>Preparing your live pulse…</span>
         </div>
       </div>
     );
@@ -116,101 +120,141 @@ export default function Admin() {
 
   if (error) {
     return (
-      <div className="page">
-        <div className="container">
-          <div className="error-card"><p>{error}</p></div>
+      <div className="state-page">
+        <div className="error-card" role="alert">
+          <span className="section-label">Unable to load</span>
+          <h1>We couldn’t open this session.</h1>
+          <p>{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page admin-page">
-      <div className="container admin-container">
-        <header className="admin-header">
-          <h1 className="logo logo-small">CLASSPULSE</h1>
-          <div className="connection-badge" data-connected={connected}>
-            <span className="connection-dot" />
-            {connected ? 'Live Telemetry' : 'Signal Lost'}
+    <div className="app-shell">
+      <header className="topbar admin-topbar">
+        <div className="topbar-inner admin-topbar-inner">
+          <a href="/" className="brand" aria-label="ClassPulse home">
+            <span className="brand-mark" aria-hidden="true" />
+            <span>ClassPulse</span>
+          </a>
+          <div className="connection-badge" data-connected={connected} role="status">
+            <span className="connection-dot" aria-hidden="true" />
+            {connected ? 'Live and listening' : 'Reconnecting'}
           </div>
-        </header>
+        </div>
+      </header>
+
+      <main className="admin-shell">
+        <section className="session-hero" aria-labelledby="session-question">
+          <div className="session-copy">
+            <div className="eyebrow">Live session</div>
+            <h1 id="session-question">{question}</h1>
+            <p>Themes update automatically as more students respond.</p>
+          </div>
+          <div className="session-stats" aria-label="Session status">
+            <div className="stat-block">
+              <span>Responses</span>
+              <strong>{responseCount}</strong>
+            </div>
+            <div className="stat-block">
+              <span>Analysis</span>
+              <strong className="stat-text">
+                {responseCount < minRequired ? `${minRequired - responseCount} to go` : 'Active'}
+              </strong>
+            </div>
+          </div>
+        </section>
 
         <div className="admin-layout">
-          {/* Sidebar with QR + info */}
-          <aside className="admin-sidebar">
-            <div className="question-display">
-              <span className="question-label">// mission briefing</span>
-              <h2 className="question-text">{question}</h2>
+          <section className="results-panel" aria-labelledby="themes-title">
+            <div className="results-header">
+              <div>
+                <span className="section-label">Live understanding</span>
+                <h2 id="themes-title">What your class is saying</h2>
+              </div>
+              {summary && (
+                <span className="analysis-chip">
+                  <span className="status-dot" aria-hidden="true" />
+                  Updated from {summary.response_count}
+                </span>
+              )}
             </div>
 
-            <div className="qr-section">
-              <p className="qr-label">// uplink coordinates</p>
-              <div className="qr-wrapper">
-                <QRCodeSVG value={studentUrl} size={180} level="M" />
+            {sseError && <div className="error-banner" role="alert">{sseError}</div>}
+
+            {summary && summary.themes.length > 0 ? (
+              <div>
+                <div className="themes-grid">
+                  {summary.themes.map((theme, i) => (
+                    <ThemeCard key={`${theme.title}-${i}`} theme={theme} index={i} />
+                  ))}
+                </div>
+                <p className="summary-meta">
+                  Based on {summary.response_count} student {summary.response_count === 1 ? 'response' : 'responses'}
+                  {summary.model_used && <> · Generated with {summary.model_used}</>}
+                </p>
               </div>
+            ) : (
+              <div className="empty-state">
+                <div className="pixel-grid" aria-hidden="true">
+                  {Array.from({ length: 9 }).map((_, index) => (
+                    <span key={index} />
+                  ))}
+                </div>
+                <h3>Waiting for the room</h3>
+                <p>
+                  Themes will appear here after {minRequired} students respond.
+                  You can share the link or QR code while you wait.
+                </p>
+                <div className="response-progress" aria-label={`${responseCount} of ${minRequired} responses needed`}>
+                  <span style={{ width: `${Math.min(100, (responseCount / minRequired) * 100)}%` }} />
+                </div>
+                <span className="progress-copy">{responseCount} / {minRequired} responses</span>
+              </div>
+            )}
+          </section>
+
+          <aside className="share-card" aria-labelledby="share-title">
+            <div className="card-heading compact-heading">
+              <div>
+                <span className="section-label">Invite students</span>
+                <h2 id="share-title">Join this pulse</h2>
+              </div>
+              <span className="share-step">Share</span>
+            </div>
+
+            <p className="share-description">
+              Students can scan the code or open the link on any device.
+            </p>
+
+            <div className="qr-wrapper">
+              <QRCodeSVG value={studentUrl} size={176} level="M" />
+            </div>
+
+            <div className="link-field">
+              <label htmlFor="student-link">Student link</label>
               <div className="link-row">
                 <input
+                  id="student-link"
                   type="text"
-                  className="form-input link-input"
+                  className="link-input"
                   value={studentUrl}
                   readOnly
                 />
-                <button className="btn btn-secondary" onClick={copyLink}>
-                  Copy
+                <button className="btn btn-secondary copy-button" onClick={copyLink}>
+                  {copied ? 'Copied' : 'Copy'}
                 </button>
               </div>
             </div>
 
-            <div className="response-counter">
-              <span className="counter-label-top">// incoming signals</span>
-              <span className="counter-number">{responseCount}</span>
-              <span className="counter-label">
-                {responseCount === 1 ? 'response' : 'responses'}
-              </span>
+            <div className="share-note">
+              <span className="share-note-icon" aria-hidden="true">↗</span>
+              <p><strong>Keep this page open.</strong> New themes arrive here automatically.</p>
             </div>
-
-            {responseCount < minRequired && (
-              <p className="waiting-text">
-                Awaiting {minRequired - responseCount} more signal{minRequired - responseCount !== 1 ? 's' : ''} to begin decode...
-              </p>
-            )}
           </aside>
-
-          {/* Main area with theme cards */}
-          <main className="admin-main">
-            {sseError && (
-              <div className="error-banner">{sseError}</div>
-            )}
-
-            {summary && summary.themes.length > 0 ? (
-              <>
-                <h2 className="themes-heading">// decoded signals</h2>
-                <div className="themes-grid">
-                  {summary.themes.map((theme, i) => (
-                    <ThemeCard key={i} theme={theme} index={i} />
-                  ))}
-                </div>
-                <p className="summary-meta">
-                  Decoded from {summary.response_count} transmissions
-                  {summary.model_used && <> &middot; {summary.model_used}</>}
-                </p>
-              </>
-            ) : (
-              <div className="empty-state">
-                <div className="radar-sweep">
-                  <div className="cross-h" />
-                  <div className="cross-v" />
-                </div>
-                <h2>Scanning for signals</h2>
-                <p>
-                  As students transmit responses, AI will automatically
-                  decode and surface the key themes from their answers.
-                </p>
-              </div>
-            )}
-          </main>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

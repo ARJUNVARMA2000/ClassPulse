@@ -41,7 +41,7 @@ flowchart LR
     S3 --> API
     API --> T[Theme job<br/>every 10s, ≥3 responses]
     T --> OR[OpenRouter fallback chain]
-    OR --> G[Gemini 2.0 Flash]
+    OR --> G[Gemini 3.5 Flash-Lite]
     OR --> L[Llama 3.1]
     OR --> M[Mistral 7B]
     OR --> GM[Gemma 2]
@@ -55,7 +55,7 @@ flowchart LR
 
 - **FastAPI backend** — REST API for sessions, responses, theme summaries; SSE endpoint for real-time dashboard
 - **React / Vite frontend** — professor dashboard with theme cards + student attribution; student submission form with QR display
-- **OpenRouter integration** — 5-model fallback chain (Gemini 2.0 Flash → Llama 3.1 → Mistral 7B → Gemma 2 → Qwen 2.5)
+- **OpenRouter integration** — 5-model fallback chain (Gemini 3.5 Flash-Lite → Llama 3.1 → Mistral 7B → Gemma 2 → Qwen 2.5)
 - **Single Dockerfile** — builds React static assets, runs FastAPI serving both API and static files
 - **Railway deployment** — one service, auto-deploy on push, OpenRouter API key as Railway variable
 

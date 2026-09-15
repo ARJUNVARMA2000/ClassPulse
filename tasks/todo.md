@@ -37,3 +37,19 @@ plainspoken product copy. Preserve the existing session flow and API behavior.
 - Verified the production build and lint. Tested session creation, student submission,
   live response counts, empty analysis, and populated theme cards at 1440×1000 and
   390×844.
+
+## 2026-09-15 Gemini model migration
+
+- [x] Audit current model settings and provider lifecycle documentation.
+- [x] Receive implementation and pull-request approval from Arjun.
+- [x] Replace the unavailable Gemini 2.0 OpenRouter fallback and align the README; verify theme extraction and fallback behavior.
+- [x] Run relevant tests and bounded provider smoke checks.
+- [x] Review the diff and prepare the pull request.
+
+### Review
+
+The first OpenRouter fallback points to Gemini 2.0 Flash, which is absent from the current model catalog. Use Gemini 3.5 Flash-Lite and align the README with the runtime.
+
+A live request used the new primary model and produced five valid themes from synthetic student feedback. A simulated primary timeout fell back successfully to the next configured model. Syntax and diff checks passed.
+
+The existing deployment must receive this change before runtime model selection changes.

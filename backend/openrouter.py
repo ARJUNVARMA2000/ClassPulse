@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 FALLBACK_MODELS = [
-    "google/gemini-2.0-flash-001",
+    "google/gemini-3.5-flash-lite",
     "meta-llama/llama-3.1-8b-instruct",
     "mistralai/mistral-7b-instruct",
     "google/gemma-2-9b-it",
